@@ -1,57 +1,68 @@
 class TasksController < ApplicationController
-    before_action :set_task, only: [:show, :edit, :update, :destroy]
-    def index
-        @tasks = Task.all
-    end
+  before_action :require_user_logged_in#, except: :index
+  before_action :set_task, only: [:show, :edit, :update, :destroy]
     
-    def show
+  def index
+    if logged_in?
+      @tasks = current_user.tasks.all
     end
+  end
     
-    def new
-        @task = Task.new
+  def show
+  end
+    
+  def new
+    @task = current_user.tasks.new
+  end
+    
+  def create
+    @task = current_user.tasks.new(task_params)
+
+    if @task.save
+      flash[:success] = 'Taskが正常に投稿されました'
+      redirect_to @task #showアクションが呼ばれる.
+    else
+      flash.now[:danger] = 'Taskが投稿されませんでした'
+      render :new
     end
+  end
     
-    def create
-        @task = Task.new(task_params)
-        
-        if @task.save
-            flash[:success] = 'Taskが正常に投稿されました'
-            redirect_to @task #showアクションが呼ばれる.
-        else
-            flash.now[:danger] = 'Taskが投稿されませんでした'
-            render :new
-        end
+  def edit
+  end
+    
+  def update
+    if current_user.tasks.update(task_params)
+      flash[:success] = 'Taskは正常に更新されました'
+      redirect_to @task
+    else
+      flash.now[:danger] = 'Taskが更新されませんでした'
+      render :edit
     end
+  end
     
-    def edit
+  def destroy
+    @task.destroy
+    
+    flash[:success] = 'Taskは正常に削除されました'
+    
+    redirect_to root_url #indexへリダイレクトする時は、tasks_urlと記載する
+  end
+  
+  private
+    
+  def set_task
+    @task = current_user.tasks.find(params[:id])
+  end
+    
+  def task_params
+    params.require(:task).permit(:content, :status)
+  end
+    
+  def correct_user
+    @tasks = current_user.tasks.all
+    unless @taskskk
+      redirect_to root_url
     end
-    
-    def update
-        if @task.update(task_params)
-            flash[:success] = 'Taskは正常に更新されました'
-            redirect_to @task
-        else
-            flash.now[:danger] = 'Taskが更新されませんでした'
-            render :edit
-        end
-    end
-    
-    def destroy
-        @task.destroy
-        
-        flash[:success] = 'Taskは正常に削除されました'
-        
-        redirect_to tasks_url #indexへリダイレクトする時は、messages_urlと記載する
-    end
-    
-    private
-    
-    def set_task
-        @task = Task.find(params[:id])
-    end
-    
-    def task_params
-        params.require(:task).permit(:content, :status)
-    end
+  end
 end
 
